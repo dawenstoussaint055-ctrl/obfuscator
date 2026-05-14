@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Page - INCONNU Obfuscator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      text-align: center;
+      padding: 40px;
+    }
+    .card {
+      background: #16213e;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 400px;
+      margin: 0 auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    h1 { color: #00d4ff; }
+    button {
+      background: #00d4ff;
+      color: #000;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #output { margin-top: 20px; color: #0f0; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Hello World</h1>
+    <p>This is a test page for INCONNU Obfuscator.</p>
+    <button onclick="runTest()">Run Test</button>
+    <div id="output"></div>
+  </div>
+
+  <script>
+    var appName = "INCONNU TEST";
+    var version = "1.0.0";
+    var secretToken = "tok_abc123xyz789";
+
+    function runTest() {
+      var score = calculatePoints(10, 5);
+      var msg = "App: " + appName + " | Score: " + score;
+      document.getElementById("output").innerText = msg;
+    }
+
+    function calculatePoints(base, bonus) {
+      var total = base * 10 + bonus;
+      var extra = 50;
+      return total + extra;
+    }
+
+    function getUserInfo() {
+      return {
+        name: "inconnu boy",
+        role: "admin",
+        token: secretToken
+      };
+    }
+
+    console.log("App loaded: " + appName + " v" + version);
+  </script>
+</body>
+</html>
