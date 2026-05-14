@@ -11,6 +11,7 @@
 ```
 
 > **Made by inconnu boy** | GitHub: [INCONNU-BOY](https://github.com/INCONNU-BOY)
+> **Made by inconnu boy** : [live app](https://obfuscator-virid.vercel.app)
 
 A powerful, zero-dependency HTML & JavaScript obfuscator built on pure Node.js. Protects your source code with multiple layers of obfuscation that are highly resistant to AI-based and online deobfuscators.
 
@@ -103,7 +104,7 @@ node index.js script.js --no-numbers --no-dead-code
 
 ## GUI (Browser Interface)
 
-Open `gui/index.html` in your browser for a full visual interface:
+Open `inconnu/inconnu.html` in your browser for a full visual interface:
 
 - Paste JS or HTML code directly
 - Toggle obfuscation options with checkboxes
