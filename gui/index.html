@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INCONNU Obfuscator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #060810;
+      --surface:  #0d1117;
+      --panel:    #111827;
+      --border:   #1f2d40;
+      --accent:   #00e5ff;
+      --accent2:  #7c3aed;
+      --accent3:  #10b981;
+      --danger:   #ef4444;
+      --text:     #e2e8f0;
+      --muted:    #4b5563;
+      --glow:     0 0 20px rgba(0,229,255,0.25);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated grid background ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at 30% 20%, rgba(124,58,237,0.08) 0%, transparent 50%),
+                  radial-gradient(ellipse at 70% 80%, rgba(0,229,255,0.06) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+      animation: drift 20s ease-in-out infinite alternate;
+    }
+
+    @keyframes drift {
+      from { transform: translate(0,0) rotate(0deg); }
+      to   { transform: translate(30px,20px) rotate(3deg); }
+    }
+
+    /* ── Layout ── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      padding: 48px 0 32px;
+    }
+
+    .logo-ascii {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(7px, 1.2vw, 12px);
+      color: var(--accent);
+      line-height: 1.2;
+      text-shadow: var(--glow);
+      letter-spacing: 0;
+      white-space: pre;
+      animation: flicker 6s ease-in-out infinite;
+    }
+
+    @keyframes flicker {
+      0%,95%,100% { opacity: 1; }
+      96% { opacity: 0.7; }
+      97% { opacity: 1; }
+      98% { opacity: 0.8; }
+    }
+
+    .brand {
+      margin-top: 16px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .tagline {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .meta {
+      margin-top: 12px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .meta a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: opacity .2s;
+    }
+    .meta a:hover { opacity: 0.7; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 12px 24px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all .2s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* ── Main Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    /* ── Editor Area ── */
+    .editor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      min-height: 420px;
+    }
+
+    .pane {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pane:first-child {
+      border-right: 1px solid var(--border);
+    }
+
+    .pane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .pane-header .dot-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot.r { background: #ef4444; }
+    .dot.y { background: #f59e0b; }
+    .dot.g { background: #10b981; }
+
+    .file-mode {
+      display: flex;
+      gap: 8px;
+    }
+
+    .mode-btn {
+      background: var(--border);
+      border: 1px solid transparent;
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .mode-btn.active {
+      background: rgba(0,229,255,0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .code-area {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+      padding: 20px;
+      tab-size: 2;
+      min-height: 380px;
+    }
+
+    .code-area::placeholder { color: var(--muted); }
+    .code-area:read-only { cursor: default; }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .options-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .opt-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .opt-label input[type=checkbox] {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      background: var(--bg);
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      transition: all .2s;
+    }
+
+    .opt-label input[type=checkbox]:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .opt-label input[type=checkbox]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: -2px;
+      left: 1px;
+      font-size: 10px;
+      color: #000;
+      font-weight: bold;
+    }
+
+    .opt-label:hover { color: var(--text); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px;
+      border: none;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all .2s;
+      text-transform: uppercase;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, #0099cc 100%);
+      color: #000;
+      box-shadow: 0 0 20px rgba(0,229,255,0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 30px rgba(0,229,255,0.5);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-green {
+      background: linear-gradient(135deg, var(--accent3), #059669);
+      color: #000;
+    }
+    .btn-green:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    /* ── Stats Bar ── */
+    .stats-bar {
+      display: flex;
+      gap: 24px;
+      padding: 10px 20px;
+      background: rgba(0,0,0,0.3);
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .stat { display: flex; align-items: center; gap: 6px; }
+    .stat-val { color: var(--accent); font-weight: 600; }
+
+    /* ── Progress ── */
+    .progress-wrap {
+      display: none;
+      padding: 0 20px 12px;
+    }
+    .progress-wrap.active { display: block; }
+
+    .progress-bar-bg {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      border-radius: 2px;
+      width: 0%;
+      transition: width .3s ease;
+    }
+
+    .progress-label {
+      margin-top: 6px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* ── Log Console ── */
+    .console-panel {
+      background: #020408;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 0;
+    }
+
+    .console-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .console-header .blink {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: var(--accent3);
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: blink 1.2s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .console-log {
+      padding: 12px 16px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      line-height: 1.8;
+      height: 140px;
+      overflow-y: auto;
+      color: #4ade80;
+    }
+
+    .log-line { display: flex; gap: 8px; }
+    .log-time { color: var(--muted); }
+    .log-ok { color: #4ade80; }
+    .log-warn { color: #f59e0b; }
+    .log-info { color: var(--accent); }
+    .log-err { color: var(--danger); }
+
+    /* ── Notification Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      background: var(--panel);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 12px;
+      color: var(--accent);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all .3s;
+      z-index: 9999;
+      box-shadow: var(--glow);
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Upload Zone ── */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      margin-bottom: 16px;
+    }
+    .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(0,229,255,0.03); }
+    .upload-zone .icon { font-size: 32px; margin-bottom: 10px; }
+    .upload-zone p { font-size: 12px; color: var(--muted); }
+    .upload-zone span { color: var(--accent); }
+
+    /* ── Section Divider ── */
+    .section-title {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .editor-grid { grid-template-columns: 1fr; }
+      .pane:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+      .options-row { gap: 10px; }
+      .logo-ascii { font-size: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- ── Header ── -->
+  <header>
+    <pre class="logo-ascii">██╗███╗   ██╗ ██████╗ ██████╗ ███╗   ██╗███╗   ██╗██╗   ██╗
+██║████╗  ██║██╔════╝██╔═══██╗████╗  ██║████╗  ██║██║   ██║
+██║██╔██╗ ██║██║     ██║   ██║██╔██╗ ██║██╔██╗ ██║██║   ██║
+██║██║╚██╗██║██║     ██║   ██║██║╚██╗██║██║╚██╗██║██║   ██║
+██║██║ ╚████║╚██████╗╚██████╔╝██║ ╚████║██║ ╚████║╚██████╔╝
+╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝ ╚═════╝</pre>
+    <div class="brand">Obfuscator</div>
+    <div class="tagline">Maximum Code Protection — Zero Dependencies</div>
+    <div class="meta">
+      <span>Made by <strong>inconnu boy</strong></span>
+      <a href="https://github.com/INCONNU-BOY" target="_blank">⬡ GitHub: INCONNU-BOY</a>
+      <span>v1.0.0</span>
+    </div>
+  </header>
+
+  <!-- ── Tabs ── -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('editor')">⬡ Editor</button>
+    <button class="tab-btn" onclick="switchTab('file')">⬡ File Upload</button>
+  </div>
+
+  <!-- ── Editor Tab ── -->
+  <div id="tab-editor">
+
+    <!-- Main card -->
+    <div class="card">
+      <div class="editor-grid">
+
+        <!-- Input pane -->
+        <div class="pane">
+          <div class="pane-header">
+            <div class="dot-row">
+              <div class="dot r"></div>
+              <div class="dot y"></div>
+              <div class="dot g"></div>
+            </div>
+            <span>SOURCE CODE</span>
+            <div class="file-mode">
+              <button class="mode-btn active" id="mode-js" onclick="setMode('js')">JS</button>
+              <button class="mode-btn" id="mode-html" onclick="setMode('html')">HTML</button>
+            </div>
+          </div>
+          <textarea class="code-area" id="input-code"
+            placeholder="// Paste your JavaScript or HTML code here...
+// All strings, variables, and logic will be protected.
+
+function example() {
+  var secret = 'my-api-key-123';
+  var user = 'admin';
+  console.log('Hello ' + user);
+  return secret;
+}"></textarea>
+        </div>
+
+        <!-- Output pane -->
+        <div class="pane">
+          <div class="pane-header">
+            <div class="dot-row">
+              <div class="dot r"></div>
+              <div class="dot y"></div>
+              <div class="dot g"></div>
+            </div>
+            <span>OBFUSCATED OUTPUT</span>
+            <button class="mode-btn" onclick="copyOutput()">⊕ COPY</button>
+          </div>
+          <textarea class="code-area" id="output-code" readonly
+            placeholder="// Obfuscated output will appear here..."></textarea>
+        </div>
+
+      </div><!-- editor-grid -->
+
+      <!-- Progress bar -->
+      <div class="progress-wrap" id="prog-wrap">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="prog-fill"></div>
+        </div>
+        <div class="progress-label" id="prog-label">Processing...</div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-bar" id="stats-bar">
+        <div class="stat">Input: <span class="stat-val" id="stat-in">—</span></div>
+        <div class="stat">Output: <span class="stat-val" id="stat-out">—</span></div>
+        <div class="stat">Ratio: <span class="stat-val" id="stat-ratio">—</span></div>
+        <div class="stat">Strings hidden: <span class="stat-val" id="stat-strings">—</span></div>
+        <div class="stat">Mode: <span class="stat-val" id="stat-mode">JS</span></div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="options-row">
+          <label class="opt-label">
+            <input type="checkbox" id="opt-rename" checked>
+            Rename vars
+          </label>
+          <label class="opt-label">
+            <input type="checkbox" id="opt-strings" checked>
+            Hide strings
+          </label>
+          <label class="opt-label">
+            <input type="checkbox" id="opt-numbers" checked>
+            Obfuscate numbers
+          </label>
+          <label class="opt-label">
+            <input type="checkbox" id="opt-props" checked>
+            Encode properties
+          </label>
+          <label class="opt-label">
+            <input type="checkbox" id="opt-dead" checked>
+            Dead code
+          </label>
+          <label class="opt-label">
+            <input type="checkbox" id="opt-antidebug">
+            Anti-debug
+          </label>
+          <label class="opt-label">
+            <input type="checkbox" id="opt-anticopy">
+            Anti-copy
+          </label>
+          <label class="opt-label" id="opt-wrap-label" style="display:none">
+            <input type="checkbox" id="opt-wrap">
+            Wrap body
+          </label>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
+          <button class="btn btn-ghost" onclick="loadExample()">Example</button>
+          <button class="btn btn-primary" id="obf-btn" onclick="runObfuscate()">
+            ⚡ OBFUSCATE
+          </button>
+          <button class="btn btn-green" id="dl-btn" onclick="downloadOutput()" style="display:none">
+            ↓ Download
+          </button>
+        </div>
+      </div>
+    </div><!-- card -->
+
+  </div><!-- tab-editor -->
+
+  <!-- ── File Upload Tab ── -->
+  <div id="tab-file" style="display:none">
+    <div class="card" style="padding:24px">
+      <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <div class="icon">📂</div>
+        <p>Drop your <span>.js</span> or <span>.html</span> file here</p>
+        <p style="margin-top:6px">or <span>click to browse</span></p>
+      </div>
+      <input type="file" id="file-input" accept=".js,.html,.htm" style="display:none" onchange="handleFileUpload(event)">
+
+      <div id="file-loaded" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div id="file-name" style="font-size:12px;color:var(--accent)"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" onclick="clearFile()">Clear</button>
+            <button class="btn btn-primary" onclick="obfuscateFile()">⚡ Obfuscate File</button>
+            <button class="btn btn-green" id="file-dl-btn" onclick="downloadFile()" style="display:none">↓ Download</button>
+          </div>
+        </div>
+        <div class="options-row" style="margin-bottom:16px">
+          <label class="opt-label"><input type="checkbox" id="fopt-rename" checked>Rename vars</label>
+          <label class="opt-label"><input type="checkbox" id="fopt-strings" checked>Hide strings</label>
+          <label class="opt-label"><input type="checkbox" id="fopt-numbers" checked>Obfuscate numbers</label>
+          <label class="opt-label"><input type="checkbox" id="fopt-dead" checked>Dead code</label>
+          <label class="opt-label"><input type="checkbox" id="fopt-antidebug">Anti-debug</label>
+          <label class="opt-label"><input type="checkbox" id="fopt-anticopy">Anti-copy</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Console ── -->
+  <div class="console-panel">
+    <div class="console-header">
+      <span><span class="blink"></span>INCONNU TERMINAL</span>
+      <button class="mode-btn" onclick="clearLog()">CLEAR</button>
+    </div>
+    <div class="console-log" id="console-log">
+      <div class="log-line"><span class="log-time">[00:00]</span><span class="log-info"> INCONNU Obfuscator v1.0.0 — Ready</span></div>
+      <div class="log-line"><span class="log-time">[00:00]</span><span class="log-ok"> All engines loaded. Awaiting input...</span></div>
+    </div>
+  </div>
+
+</div><!-- wrapper -->
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     OBFUSCATION ENGINE (embedded, no server required)
+     ══════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ── Utility ─────────────────────────────────────────────────────
+function randomId(len) {
+  len = len || 8;
+  var chars = '0123456789abcdef';
+  var result = '_0x';
+  for (var i = 0; i < len; i++) result += chars[Math.floor(Math.random() * chars.length)];
+  return result;
+}
+
+function randomHex(str) {
+  return str.split('').map(function(c) {
+    return '\\x' + c.charCodeAt(0).toString(16).padStart(2, '0');
+  }).join('');
+}
+
+function toUnicode(str) {
+  return str.split('').map(function(c) {
+    return '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0');
+  }).join('');
+}
+
+function btoa64(str) {
+  try { return btoa(unescape(encodeURIComponent(str))); } catch(e) { return btoa(str); }
+}
+
+function shuffleArray(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function generateJunkVar() {
+  var p = ['_0x','__','_$','$_'][randInt(0,3)];
+  var h = Math.random().toString(16).slice(2,10);
+  return p + h;
+}
+
+// ── Dead Code ───────────────────────────────────────────────────
+function generateDeadCode() {
+  var chunks = [];
+  for (var i = 0; i < randInt(3, 6); i++) {
+    var v1 = generateJunkVar(), v2 = generateJunkVar();
+    chunks.push(
+      'var ' + v1 + '=function(){return ' + randInt(1000,9999) + ';};' +
+      'var ' + v2 + '=' + v1 + '()*' + randInt(1,9) + ';' +
+      'if(false){console[\'log\'](' + v2 + ');}' +
+      'var ' + generateJunkVar() + '=typeof ' + v2 + '!==\'undefined\'?' + v2 + ':null;'
+    );
+  }
+  return chunks.join('\n');
+}
+
+// ── String Array ─────────────────────────────────────────────────
+function obfuscateStrings(code) {
+  var strings = [];
+  var strPattern = /(["'])((?:(?!\1)[^\\]|\\.)*)(\1)/g;
+  var m;
+  while ((m = strPattern.exec(code)) !== null) {
+    var inner = m[2];
+    if (inner.length > 0 && !strings.includes(inner)) {
+      strings.push(inner);
+    }
+  }
+  if (strings.length === 0) return code;
+
+  var shuffled = shuffleArray(strings.slice());
+  var indexMap = {};
+  strings.forEach(function(s) { indexMap[s] = shuffled.indexOf(s); });
+
+  var arrName = randomId(6);
+  var decoderName = randomId(6);
+  var rotateAmt = randInt(1, Math.max(1, shuffled.length - 1));
+
+  var arrLiteral = shuffled.map(function(s) {
+    return "'" + randomHex(s) + "'";
+  }).join(',');
+
+  var bootstrap =
+    'var ' + arrName + '=[' + arrLiteral + '];\n' +
+    '(function(){' +
+    'for(var _i=0;_i<' + (shuffled.length - rotateAmt) + ';_i++){' +
+    arrName + '.push(' + arrName + '.shift());' +
+    '}' +
+    '})();\n' +
+    'function ' + decoderName + '(_i){return ' + arrName + '[_i];}';
+
+  var result = code;
+  strings.forEach(function(s) {
+    var idx = indexMap[s];
+    var escaped = s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var re = new RegExp('(["\'])' + escaped + '\\1', 'g');
+    result = result.replace(re, decoderName + '(' + idx + ')');
+  });
+
+  return bootstrap + '\n' + result;
+}
+
+// ── Number Obfuscation ────────────────────────────────────────────
+function obfuscateNumbers(code) {
+  return code.replace(/\b(\d+)\b/g, function(match, num) {
+    var n = parseInt(num);
+    if (isNaN(n) || n > 100000) return match;
+    var offset = randInt(1, 500);
+    return '(' + (n + offset) + '-' + offset + ')';
+  });
+}
+
+// ── Property Obfuscation ──────────────────────────────────────────
+function obfuscateProperties(code) {
+  var skip = ['prototype','constructor','length','name','arguments'];
+  return code.replace(/(\w)\.([$a-zA-Z_][a-zA-Z0-9_$]*)/g, function(match, obj, prop) {
+    if (skip.indexOf(prop) !== -1) return match;
+    return obj + "['" + toUnicode(prop) + "']";
+  });
+}
+
+// ── Variable Renaming ─────────────────────────────────────────────
+function renameVariables(code) {
+  var reserved = [
+    'var','let','const','function','return','if','else','for','while',
+    'do','switch','case','break','continue','new','delete','typeof',
+    'instanceof','in','of','try','catch','finally','throw','class',
+    'extends','import','export','default','this','super','null','undefined',
+    'true','false','NaN','Infinity','console','window','document','Math',
+    'JSON','Object','Array','String','Number','Boolean','RegExp','Error',
+    'Promise','async','await','yield','arguments','prototype','constructor',
+    'length','push','pop','shift','unshift','splice','slice','join','map',
+    'filter','reduce','forEach','indexOf','includes','toString','parseInt',
+    'parseFloat','isNaN','isFinite','setTimeout','setInterval',
+  ];
+  var reservedSet = {};
+  reserved.forEach(function(r) { reservedSet[r] = true; });
+
+  var renameMap = {};
+  var declPat = /\b(var|let|const)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+  var funcPat  = /\bfunction\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+  var m;
+
+  while ((m = declPat.exec(code)) !== null) {
+    var n = m[2];
+    if (!reservedSet[n] && !renameMap[n]) renameMap[n] = randomId(5);
+  }
+  while ((m = funcPat.exec(code)) !== null) {
+    var n = m[1];
+    if (!reservedSet[n] && !renameMap[n]) renameMap[n] = randomId(5);
+  }
+
+  var result = code;
+  Object.keys(renameMap).forEach(function(orig) {
+    var re = new RegExp('\\b' + orig.replace(/[$]/g, '\\$') + '\\b', 'g');
+    result = result.replace(re, renameMap[orig]);
+  });
+  return result;
+}
+
+// ── Anti-Debug ────────────────────────────────────────────────────
+function getAntiDebugCode() {
+  var v = randomId(5), t1 = randomId(4), t2 = randomId(4);
+  return '(function(){' +
+    'var ' + v + '=function(){' +
+    'var ' + t1 + '=new Date();debugger;' +
+    'if(new Date()-' + t1 + '>100){document.body.innerHTML=\'\';}' +
+    '};setInterval(' + v + ',800);' +
+    'try{(function(){}).constructor(\'debugger\')();}catch(e){}' +
+    '})();';
+}
+
+// ── Anti-Copy ─────────────────────────────────────────────────────
+function getAntiCopyCode() {
+  return 'document.addEventListener(\'contextmenu\',function(e){e.preventDefault();});' +
+    'document.addEventListener(\'keydown\',function(e){' +
+    'if(e.ctrlKey&&(e.key===\'u\'||e.key===\'s\'||e.key===\'a\'||e.key===\'c\')){e.preventDefault();}' +
+    'if(e.keyCode===123){e.preventDefault();}' +
+    '});';
+}
+
+// ── Main JS Obfuscation ───────────────────────────────────────────
+function obfuscateJS(code, opts) {
+  opts = opts || {};
+  var result = code;
+
+  // Strip comments
+  result = result.replace(/\/\/[^\n]*/g, '');
+  result = result.replace(/\/\*[\s\S]*?\*\//g, '');
+  result = result.replace(/\s+/g, ' ').trim();
+
+  if (opts.renameVars !== false) result = renameVariables(result);
+  if (opts.obfuscateStrings !== false) result = obfuscateStrings(result);
+  if (opts.obfuscateNumbers !== false) result = obfuscateNumbers(result);
+  if (opts.obfuscateProperties !== false) result = obfuscateProperties(result);
+  if (opts.deadCode !== false) result = generateDeadCode() + '\n' + result;
+  if (opts.antiDebug) result = getAntiDebugCode() + '\n' + result;
+  if (opts.antiCopy) result = getAntiCopyCode() + '\n' + result;
+
+  var w1 = randomId(4), w2 = randomId(4);
+  result = ';(function(' + w1 + ',' + w2 + '){' + result + '})(this,function(){return [];});';
+  return result;
+}
+
+// ── CSS Obfuscation ───────────────────────────────────────────────
+function obfuscateCSS(css) {
+  return css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').trim();
+}
+
+// ── HTML Obfuscation ──────────────────────────────────────────────
+function obfuscateHTML(html, opts) {
+  opts = opts || {};
+  var result = html;
+
+  // Process <script> tags
+  result = result.replace(/<script([^>]*)>([\s\S]*?)<\/script>/gi, function(match, attrs, code) {
+    if (!code.trim() || /src=/i.test(attrs)) return match;
+    try {
+      return '<script' + attrs + '>' + obfuscateJS(code, opts) + '</script>';
+    } catch(e) { return match; }
+  });
+
+  // Process <style> tags
+  result = result.replace(/<style([^>]*)>([\s\S]*?)<\/style>/gi, function(match, attrs, css) {
+    if (!css.trim()) return match;
+    return '<style' + attrs + '>' + obfuscateCSS(css) + '</style>';
+  });
+
+  // Junk comments
+  var junkComs = [
+    '<!-- cache:0x' + Math.random().toString(16).slice(2,10) + ' -->',
+    '<!-- __INCONNU_PROTECTED__ -->',
+    '<!-- build:' + Date.now() + ' -->',
+  ];
+  result = result.replace(/(>)(\s*)(<)/g, function(match, a, sp, b) {
+    if (Math.random() > 0.65) return a + sp + junkComs[randInt(0, junkComs.length-1)] + b;
+    return match;
+  });
+
+  // Protection injections in <head>
+  var injections = [];
+  if (opts.antiDebug) injections.push('<script>' + getAntiDebugCode() + '</script>');
+  if (opts.antiCopy)  injections.push('<script>' + getAntiCopyCode()  + '</script>');
+
+  if (injections.length > 0) {
+    result = result.replace('</head>', injections.join('\n') + '\n</head>');
+  }
+
+  // Signature
+  var sig = '<!-- ' + btoa64('INCONNU OBFUSCATOR | INCONNU-BOY') + ' -->';
+  result = result.replace('<html', sig + '\n<html');
+
+  return result;
+}
+
+// ── UI Logic ──────────────────────────────────────────────────────
+var currentMode = 'js';
+var currentOutput = '';
+var fileContent = null;
+var fileName = '';
+
+function switchTab(tab) {
+  document.getElementById('tab-editor').style.display = tab === 'editor' ? '' : 'none';
+  document.getElementById('tab-file').style.display   = tab === 'file'   ? '' : 'none';
+  document.querySelectorAll('.tab-btn').forEach(function(b, i) {
+    b.classList.toggle('active', (i === 0 && tab === 'editor') || (i === 1 && tab === 'file'));
+  });
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('mode-js').classList.toggle('active', mode === 'js');
+  document.getElementById('mode-html').classList.toggle('active', mode === 'html');
+  document.getElementById('stat-mode').textContent = mode.toUpperCase();
+  document.getElementById('opt-wrap-label').style.display = mode === 'html' ? '' : 'none';
+  log('Switched to ' + mode.toUpperCase() + ' mode', 'info');
+}
+
+function getOpts() {
+  return {
+    renameVars:          document.getElementById('opt-rename').checked,
+    obfuscateStrings:    document.getElementById('opt-strings').checked,
+    obfuscateNumbers:    document.getElementById('opt-numbers').checked,
+    obfuscateProperties: document.getElementById('opt-props').checked,
+    deadCode:            document.getElementById('opt-dead').checked,
+    antiDebug:           document.getElementById('opt-antidebug').checked,
+    antiCopy:            document.getElementById('opt-anticopy').checked,
+    wrapBody:            document.getElementById('opt-wrap') ? document.getElementById('opt-wrap').checked : false,
+  };
+}
+
+function runObfuscate() {
+  var code = document.getElementById('input-code').value.trim();
+  if (!code) { showToast('⚠ Paste some code first!'); return; }
+
+  var btn = document.getElementById('obf-btn');
+  btn.disabled = true;
+  btn.textContent = 'Processing...';
+  showProgress(true);
+
+  setTimeout(function() {
+    try {
+      var opts = getOpts();
+      var t0 = Date.now();
+      var result;
+
+      setProgress(20, 'Stripping comments...');
+      setTimeout(function() {
+        setProgress(40, 'Renaming variables...');
+        setTimeout(function() {
+          setProgress(65, 'Encoding strings...');
+          setTimeout(function() {
+            setProgress(85, 'Injecting dead code...');
+            setTimeout(function() {
+              try {
+                if (currentMode === 'js') {
+                  result = obfuscateJS(code, opts);
+                } else {
+                  result = obfuscateHTML(code, opts);
+                }
+
+                var ms = Date.now() - t0;
+                document.getElementById('output-code').value = result;
+                currentOutput = result;
+
+                // Count hidden strings
+                var strMatches = (code.match(/(["'])(?:(?!\1)[^\\]|\\.)*?\1/g) || []).length;
+
+                // Update stats
+                document.getElementById('stat-in').textContent    = formatBytes(code.length);
+                document.getElementById('stat-out').textContent   = formatBytes(result.length);
+                document.getElementById('stat-ratio').textContent = ((result.length / code.length) * 100).toFixed(0) + '%';
+                document.getElementById('stat-strings').textContent = strMatches;
+
+                setProgress(100, 'Done in ' + ms + 'ms');
+                setTimeout(function() { showProgress(false); }, 800);
+
+                document.getElementById('dl-btn').style.display = '';
+                log('Obfuscation complete — ' + formatBytes(code.length) + ' → ' + formatBytes(result.length) + ' in ' + ms + 'ms', 'ok');
+                showToast('✓ Obfuscated successfully!');
+              } catch(e) {
+                log('Error: ' + e.message, 'err');
+                showToast('✗ Error: ' + e.message);
+              }
+              btn.disabled = false;
+              btn.textContent = '⚡ OBFUSCATE';
+            }, 100);
+          }, 100);
+        }, 80);
+      }, 80);
+    } catch(e) {
+      log('Error: ' + e.message, 'err');
+      btn.disabled = false;
+      btn.textContent = '⚡ OBFUSCATE';
+      showProgress(false);
+    }
+  }, 50);
+}
+
+function copyOutput() {
+  var out = document.getElementById('output-code').value;
+  if (!out) { showToast('Nothing to copy!'); return; }
+  navigator.clipboard.writeText(out).then(function() {
+    showToast('✓ Copied to clipboard!');
+    log('Output copied to clipboard', 'ok');
+  });
+}
+
+function downloadOutput() {
+  if (!currentOutput) return;
+  var ext = currentMode === 'js' ? '.obf.js' : '.obf.html';
+  downloadText(currentOutput, 'inconnu_obfuscated' + ext);
+}
+
+function downloadText(content, name) {
+  var blob = new Blob([content], { type: 'text/plain' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  log('Downloaded: ' + name, 'ok');
+}
+
+function clearAll() {
+  document.getElementById('input-code').value = '';
+  document.getElementById('output-code').value = '';
+  currentOutput = '';
+  document.getElementById('dl-btn').style.display = 'none';
+  document.getElementById('stat-in').textContent = '—';
+  document.getElementById('stat-out').textContent = '—';
+  document.getElementById('stat-ratio').textContent = '—';
+  document.getElementById('stat-strings').textContent = '—';
+  log('Editor cleared', 'info');
+}
+
+function loadExample() {
+  if (currentMode === 'js') {
+    document.getElementById('input-code').value =
+`// Example JavaScript — INCONNU Obfuscator Demo
+var apiKey = "sk-secret-key-12345";
+var userName = "admin";
+var endpoint = "https://api.example.com/v1/data";
+
+function authenticate(user, key) {
+  var token = "Bearer " + key;
+  var headers = { "Authorization": token, "X-User": user };
+  console.log("Connecting as: " + user);
+  return headers;
+}
+
+function processData(data, multiplier) {
+  var base = 100;
+  var score = data * multiplier + base;
+  return score;
+}
+
+var result = authenticate(userName, apiKey);
+var score = processData(42, 3);
+console.log("Score: " + score);`;
+  } else {
+    document.getElementById('input-code').value =
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>My App</title>
+  <style>
+    body { background: #111; color: #eee; font-family: sans-serif; }
+    .btn { background: #00e5ff; color: #000; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Hello World</h1>
+  <button class="btn" onclick="init()">Launch</button>
+  <script>
+    var secretKey = "my-secret-api-key";
+    var version = "1.0.0";
+    var config = { debug: false, env: "production" };
+
+    function init() {
+      var msg = "App v" + version + " started";
+      console.log(msg);
+      alert(msg);
+    }
+  <\/script>
+</body>
+</html>`;
+  }
+  log('Example loaded (' + currentMode.toUpperCase() + ')', 'info');
+}
+
+// ── File Upload ───────────────────────────────────────────────────
+function handleFileUpload(evt) {
+  var file = evt.target.files[0];
+  if (!file) return;
+  var ext = file.name.split('.').pop().toLowerCase();
+  if (!['js','html','htm'].includes(ext)) {
+    showToast('⚠ Only .js and .html files are supported');
+    return;
+  }
+  fileName = file.name;
+  currentMode = (ext === 'js') ? 'js' : 'html';
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    fileContent = e.target.result;
+    document.getElementById('file-name').textContent = '📄 ' + file.name + ' (' + formatBytes(file.size) + ')';
+    document.getElementById('file-loaded').style.display = '';
+    document.getElementById('drop-zone').style.display = 'none';
+    log('File loaded: ' + file.name + ' (' + formatBytes(file.size) + ')', 'ok');
+  };
+  reader.readAsText(file);
+}
+
+function obfuscateFile() {
+  if (!fileContent) return;
+  var opts = {
+    renameVars:       document.getElementById('fopt-rename').checked,
+    obfuscateStrings: document.getElementById('fopt-strings').checked,
+    obfuscateNumbers: document.getElementById('fopt-numbers').checked,
+    deadCode:         document.getElementById('fopt-dead').checked,
+    antiDebug:        document.getElementById('fopt-antidebug').checked,
+    antiCopy:         document.getElementById('fopt-anticopy').checked,
+  };
+
+  try {
+    var result;
+    if (currentMode === 'js') result = obfuscateJS(fileContent, opts);
+    else result = obfuscateHTML(fileContent, opts);
+    fileContent = result;
+    document.getElementById('file-dl-btn').style.display = '';
+    log('File obfuscated: ' + fileName, 'ok');
+    showToast('✓ File obfuscated! Ready to download.');
+  } catch(e) {
+    log('Error: ' + e.message, 'err');
+    showToast('✗ Error: ' + e.message);
+  }
+}
+
+function downloadFile() {
+  if (!fileContent) return;
+  var parts = fileName.split('.');
+  var ext = parts.pop();
+  var base = parts.join('.');
+  downloadText(fileContent, base + '.obf.' + ext);
+}
+
+function clearFile() {
+  fileContent = null;
+  fileName = '';
+  document.getElementById('file-name').textContent = '';
+  document.getElementById('file-loaded').style.display = 'none';
+  document.getElementById('drop-zone').style.display = '';
+  document.getElementById('file-dl-btn').style.display = 'none';
+  document.getElementById('file-input').value = '';
+}
+
+// ── Drag & Drop ───────────────────────────────────────────────────
+var dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', function() { dz.classList.remove('drag'); });
+dz.addEventListener('drop', function(e) {
+  e.preventDefault();
+  dz.classList.remove('drag');
+  var file = e.dataTransfer.files[0];
+  if (file) {
+    var fakeEvt = { target: { files: [file] } };
+    handleFileUpload(fakeEvt);
+  }
+});
+
+// ── Progress ──────────────────────────────────────────────────────
+function showProgress(show) {
+  document.getElementById('prog-wrap').classList.toggle('active', show);
+  if (!show) {
+    document.getElementById('prog-fill').style.width = '0%';
+    document.getElementById('prog-label').textContent = '';
+  }
+}
+function setProgress(pct, label) {
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = label;
+}
+
+// ── Console Logger ────────────────────────────────────────────────
+function log(msg, type) {
+  type = type || 'info';
+  var now = new Date();
+  var ts = '[' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ']';
+  var el = document.getElementById('console-log');
+  var line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = '<span class="log-time">' + ts + '</span><span class="log-' + type + '"> ' + msg + '</span>';
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog() {
+  document.getElementById('console-log').innerHTML = '';
+  log('Console cleared', 'info');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+function formatBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1048576).toFixed(1) + ' MB';
+}
+</script>
+</body>
+</html>
