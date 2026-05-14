@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "inconnu.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "inconnu/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "index.js"
+    },
+    {
+      "src": "/health",
+      "dest": "index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "inconnu/inconnu.html"
+    }
+  ]
+}
