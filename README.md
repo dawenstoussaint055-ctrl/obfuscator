@@ -11,7 +11,7 @@
 ```
 
 > **Made by inconnu boy** | GitHub: [INCONNU-BOY](https://github.com/INCONNU-BOY)
-> **Made by inconnu boy** : [live app](https://obfuscator-virid.vercel.app)
+> **Made by inconnu boy** : [SITE LIVE DÉMO](https://obfuscator-virid.vercel.app)
 
 A powerful, zero-dependency HTML & JavaScript obfuscator built on pure Node.js. Protects your source code with multiple layers of obfuscation that are highly resistant to AI-based and online deobfuscators.
 
